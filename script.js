@@ -1,75 +1,45 @@
-// script.jsAdd commentMore actions
-document.addEventListener("DOMContentLoaded", function () {
-  const chatbotContainer = document.getElementById("chatbot-container");
-  const closeBtn = document.getElementById("close-btn");
-  const sendBtn = document.getElementById("send-btn");
-  const chatbotInput = document.getElementById("chatbot-input");
-  const chatbotMessages = document.getElementById("chatbot-messages");
+const chatBox = document.getElementById("chat-box");
 
-  const chatbotIcon = document.getElementById("chatbot-icon");
-  const closeButton = document.getElementById("close-btn");
+const API_KEY = "AIzaSyDw_9HDUDe2yV2QHH90CW8Go7HgVYPNk-w";
 
-  // Toggle chatbot visibility when clicking the icon
-  // Show chatbot when clicking the icon
-  chatbotIcon.addEventListener("click", function () {
-    chatbotContainer.classList.remove("hidden");
-    chatbotIcon.style.display = "none"; // Hide chat icon
-  });
+async function sendMessage() {
+  const input = document.getElementById("user-input");
+  const userMessage = input.value.trim();
+  if (!userMessage) return;
 
-  // Also toggle when clicking the close button
-  closeButton.addEventListener("click", function () {
-    chatbotContainer.classList.add("hidden");
-    chatbotIcon.style.display = "flex"; // Show chat icon again
-  });
+  appendMessage("🧑‍💻 Kamu", userMessage);
+  input.value = "";
 
-  sendBtn.addEventListener("click", sendMessage);
-  chatbotInput.addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  });
+  appendMessage("🤖 Gemini", "Sedang mengetik...");
 
-  function sendMessage() {
-    const userMessage = chatbotInput.value.trim();
-    if (userMessage) {
-      appendMessage("user", userMessage);
-      chatbotInput.value = "";
-      getBotResponse(userMessage);
-    }
-  }
-
-  function appendMessage(sender, message) {
-    const messageElement = document.createElement("div");
-    messageElement.classList.add("message", sender);
-    messageElement.textContent = message;
-    chatbotMessages.appendChild(messageElement);
-    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-  }
-
-  async function getBotResponse(userMessage) {
-    const apiKey = "AIzaSyAox1KyQhtdXMAuK2sD2osfU_YkWVCr93c"; // Replace with your OpenAI API key
-    const apiUrl = "https://api.openai.com/v1/chat/completions";
-
-    try {
-      const response = await fetch(apiUrl, {
+  try {
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY,
+      {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: userMessage }],
-          max_tokens: 150,
+          contents: [{ parts: [{ text: userMessage }] }],
         }),
-      });
+      }
+    );
 
-      const data = await response.json();
-      const botMessage = data.choices[0].message.content;
-      appendMessage("bot", botMessage);
-    } catch (error) {
-      console.error("Error fetching bot response:", error);
-      appendMessage("bot", "Sorry, something went wrong. Please try again.");
-    }
+    const data = await response.json();
+    const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Gagal menjawab.";
+
+    // Hapus "Sedang mengetik..." dan tampilkan jawaban
+    chatBox.lastChild.remove();
+    appendMessage("🤖 Gemini", botReply);
+  } catch (error) {
+    console.error(error);
+    chatBox.lastChild.remove();
+    appendMessage("🤖 Gemini", "Terjadi kesalahan.");
   }
-});
+}
+
+function appendMessage(sender, text) {
+  const div = document.createElement("div");
+  div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
